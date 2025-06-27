@@ -18,6 +18,7 @@
 package de.securedimensions.frostserver.auth.oauth2;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import de.fraunhofer.iosb.ilt.frostserver.persistence.PersistenceManager;
 import de.fraunhofer.iosb.ilt.frostserver.service.InitResult;
 import de.fraunhofer.iosb.ilt.frostserver.settings.ConfigDefaults;
 import de.fraunhofer.iosb.ilt.frostserver.settings.CoreSettings;
@@ -101,6 +102,21 @@ public class OAuth2AuthProvider implements AuthProvider, LiquibaseUser, ConfigDe
     }
 
     @Override
+    public String checkForUpgrades(Map<String, Object> map) {
+        return null;
+    }
+
+    @Override
+    public boolean doUpgrades(Writer writer, Map<String, Object> map) throws UpgradeFailedException, IOException {
+        return false;
+    }
+
+    @Override
+    public Map<String, Object> createLiqibaseParams(PersistenceManager persistenceManager, Map<String, Object> map) {
+        return null;
+    }
+
+    @Override
     public void addFilter(Object context, CoreSettings coreSettings) {
         OAuth2AuthFilterHelper.createFilter(context, coreSettings);
     }
@@ -169,16 +185,6 @@ public class OAuth2AuthProvider implements AuthProvider, LiquibaseUser, ConfigDe
             return PrincipalExtended.ANONYMOUS_PRINCIPAL;
         }
         return userInfo.getUserPrincipal();
-    }
-
-    @Override
-    public String checkForUpgrades() {
-        return null;
-    }
-
-    @Override
-    public boolean doUpgrades(Writer out) throws UpgradeFailedException, IOException {
-        return false;
     }
 
 }

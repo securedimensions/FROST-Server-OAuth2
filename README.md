@@ -19,16 +19,16 @@ The result from the TokenInfo and UserInfo is cached in separate self-expiring C
 The deployment of the OAuth2 plugin requires a working deployment of the FROST-Server.
 
 ### Build the OAuth2 plugin
-This repository builds with the FROST-Server 2.5.3.
+This repository builds with the FROST-Server 2.5.8.
 
 Use `git clone https://github.com/securedimensions/FROST-Server-OAuth2.git` to download the sources.
 
-Then `cd FROST-Server-OAuth2` and use command `mvn install` to produce the JAR file `FROST-Server-2.5.3.Plugin.OAuth2-1.0.jar`. Make sure you copy the JAR-file to the appropriate FROST-Server directory.
+Then `cd FROST-Server-OAuth2` and use command `mvn install` to produce the JAR file `FROST-Server-2.5.8.Plugin.OAuth2-1.0.jar`. Make sure you copy the JAR-file to the appropriate FROST-Server directory.
 
 ## Deployment with FROST-Server
 Use `git clone -b v2.5.x https://github.com/FraunhoferIOSB/FROST-Server.git FROST-Server-v2.5.x` to create the FROST-Server directory structure.
 
-Then cd `FROST-Server-v2.5.x` and `git clone -b FROST-Server-2.5.3 https://github.com/securedimensions/FROST-Server-OAuth2.git FROST-Server.Auth.OAuth2`.
+Then cd `FROST-Server-v2.5.x` and `git clone -b FROST-Server-2.5.8 https://github.com/securedimensions/FROST-Server-OAuth2.git FROST-Server.Auth.OAuth2`.
 
 Add the `OAuth2` plugin to the `FROST-Server-v2.5.x/pom.xml`.
 
