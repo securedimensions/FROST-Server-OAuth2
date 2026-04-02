@@ -19,18 +19,18 @@ The result from the TokenInfo and UserInfo is cached in separate self-expiring C
 The deployment of the OAuth2 plugin requires a working deployment of the FROST-Server.
 
 ### Build the OAuth2 plugin
-This repository builds with the FROST-Server 2.5.0-SNAPSHOT.
+This repository builds with the FROST-Server 2.7.2.
 
 Use `git clone https://github.com/securedimensions/FROST-Server-OAuth2.git` to download the sources.
 
-Then `cd FROST-Server-OAuth2` and use command `mvn install` to produce the JAR file `FROST-Server-2.5.0-SNAPSHOT.Plugin.OAuth2-1.0.jar`. Make sure you copy the JAR-file to the appropriate FROST-Server directory.
+Then `cd FROST-Server-OAuth2` and use command `mvn install` to produce the JAR file `FROST-Server.Plugin.OAuth2-1.0.jar`. Make sure you copy the JAR-file to the appropriate FROST-Server directory.
 
 ## Deployment with FROST-Server
-Use `git clone -b v2.x https://github.com/FraunhoferIOSB/FROST-Server.git FROST-Server-v2.x` to create the FROST-Server directory structure.
+Use `git clone -b v2.7.2 https://github.com/FraunhoferIOSB/FROST-Server.git FROST-Server-v2.7.2` to create the FROST-Server directory structure.
 
-Then cd `FROST-Server-v2.x` and `git clone https://github.com/securedimensions/FROST-Server-OAuth2.git FROST-Server.Auth.OAuth2`.
+Then cd `FROST-Server-v2.7.2` and `git clone -b FROST-Server-2.7.2 https://github.com/securedimensions/FROST-Server-OAuth2.git FROST-Server.Auth.OAuth2`.
 
-Add the `OAuth2` plugin to the `FROST-Server-v2.x/pom.xml`.
+Add the `OAuth2` plugin to the `FROST-Server-v2.7.2/pom.xml`.
 
 ```xml
     <modules>
@@ -82,21 +82,21 @@ The plugin can also be configured to undertake authentication only (so no author
 <Parameter override="false" name="auth.authenticateOnly" value="true" />
 ```
 
-To enforce simple role based authorization, it is possible to provide the role required for read, create, update and delete. Also, the admin role can configured this way:
+To enforce simple role based authorization, it is possible to provide the role required for read, create, update and delete. Also, the admin role can be configured this way:
 
 ```xml
-<Parameter override="false" name="auth.role.read" value="..." />
-<Parameter override="false" name="auth.role.create" value="..." />
-<Parameter override="false" name="auth.role.update" value="..." />
-<Parameter override="false" name="auth.role.delete" value="..." />
-<Parameter override="false" name="auth.role.admin" value="..." />
+    <Parameter override="false" name="auth.role.read" value="..." />
+    <Parameter override="false" name="auth.role.create" value="..." />
+    <Parameter override="false" name="auth.role.update" value="..." />
+    <Parameter override="false" name="auth.role.delete" value="..." />
+    <Parameter override="false" name="auth.role.admin" value="..." />
 ```
 
 ### Configure the user identifier that gets admin role
 Please add the `auth.adminUid` to the configuration. If using AUTHENIX for authentication, the REMOTE_USER is identified by a UUID.
 
 ```xml
-<Parameter override="false" name="auth.adminUid" value="<user identifier>" />
+    <Parameter override="false" name="auth.adminUid" value="<user identifier>" />
 ```
 
 ### Configure the Authorization Server
@@ -114,7 +114,7 @@ The `client_id` and `client_secret` can be obtained from registering the plugin 
 The `auth.oauth.cacheExpires` parameter allows to configure the timeout for the token and user info cache:
 
 ```xml
-<Parameter override="false" name="auth.oauth.cacheExpires" value="60" />
+    <Parameter override="false" name="auth.oauth.cacheExpires" value="60" />
 ```
 
 ### Configure local storage of Users
