@@ -28,7 +28,7 @@ Then `cd FROST-Server-OAuth2` and use command `mvn install` to produce the JAR f
 ## Deployment with FROST-Server
 Use `git clone -b v2.7.2 https://github.com/FraunhoferIOSB/FROST-Server.git FROST-Server-v2.7.2` to create the FROST-Server directory structure.
 
-Then cd `FROST-Server-v2.7.2` and `git clone -b FROST-Server-2.7.2 https://github.com/securedimensions/FROST-Server-OAuth2.git FROST-Server.Auth.OAuth2`.
+Then cd `FROST-Server-v2.7.2` and `git clone -b v1.0-FROST-Server.v2.7.2 https://github.com/securedimensions/FROST-Server-OAuth2.git FROST-Server.Auth.OAuth2`.
 
 Add the `OAuth2` plugin to the `FROST-Server-v2.7.2/pom.xml`.
 
