@@ -17,11 +17,7 @@
  */
 package de.securedimensions.frostserver.auth.oauth2;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.IntNode;
-import com.fasterxml.jackson.databind.node.NullNode;
-import de.fraunhofer.iosb.ilt.frostserver.settings.Settings;
+import de.fraunhofer.iosb.ilt.settings.Settings;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -44,6 +40,10 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.IntNode;
+import tools.jackson.databind.node.NullNode;
 
 public class TokenIntrospection {
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenIntrospection.class);

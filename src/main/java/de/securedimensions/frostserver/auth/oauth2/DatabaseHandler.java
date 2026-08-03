@@ -24,7 +24,7 @@ import static de.securedimensions.frostserver.auth.oauth2.OAuth2AuthProvider.TAG
 import de.fraunhofer.iosb.ilt.frostserver.persistence.pgjooq.utils.ConnectionUtils;
 import de.fraunhofer.iosb.ilt.frostserver.persistence.pgjooq.utils.ConnectionUtils.ConnectionWrapper;
 import de.fraunhofer.iosb.ilt.frostserver.settings.CoreSettings;
-import de.fraunhofer.iosb.ilt.frostserver.settings.Settings;
+import de.fraunhofer.iosb.ilt.settings.Settings;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;

@@ -20,16 +20,12 @@ package de.securedimensions.frostserver.auth.oauth2;
 import static de.fraunhofer.iosb.ilt.frostserver.settings.CoreSettings.*;
 import static de.securedimensions.frostserver.auth.oauth2.OAuth2AuthProvider.*;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.IntNode;
-import de.fraunhofer.iosb.ilt.frostserver.settings.ConfigDefaults;
 import de.fraunhofer.iosb.ilt.frostserver.settings.ConfigUtils;
 import de.fraunhofer.iosb.ilt.frostserver.settings.CoreSettings;
-import de.fraunhofer.iosb.ilt.frostserver.settings.Settings;
 import de.fraunhofer.iosb.ilt.frostserver.util.HttpMethod;
 import de.fraunhofer.iosb.ilt.frostserver.util.user.PrincipalExtended;
+import de.fraunhofer.iosb.ilt.settings.ConfigDefaults;
+import de.fraunhofer.iosb.ilt.settings.Settings;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,6 +34,10 @@ import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.IntNode;
 
 /**
  * A Tomcat filter for OAuth2 Authentication.
@@ -100,7 +100,20 @@ public class OAuth2AuthFilter implements Filter {
             throw new IllegalArgumentException("Could not load core settings.");
         }
         Settings authSettings = coreSettings.getAuthSettings();
-        tokenIntrospection = new TokenIntrospection(authSettings);
+        // Reuse the TokenIntrospection (and its ExpiredKeyRemover executor)
+        // that OAuth2AuthProvider#addFilter published on the ServletContext,
+        // if there is one, rather than creating a second instance: only
+        // this filter's shutdown() is guaranteed to run (via Filter#destroy(),
+        // called reliably by the servlet container), so the Provider's own
+        // instance would otherwise leak a background thread past webapp
+        // undeploy. Falls back to creating our own for setups that use this
+        // filter without OAuth2AuthProvider as the configured auth.provider.
+        Object sharedTokenIntrospection = context.getAttribute(OAuth2AuthProvider.ATTRIBUTE_TOKEN_INTROSPECTION);
+        if (sharedTokenIntrospection instanceof TokenIntrospection shared) {
+            tokenIntrospection = shared;
+        } else {
+            tokenIntrospection = new TokenIntrospection(authSettings);
+        }
         userInfo = new UserInfo(authSettings);
         registerUserLocally = authSettings.getBoolean(TAG_REGISTER_USER_LOCALLY, OAuth2AuthProvider.class);
         if (registerUserLocally) {
@@ -142,8 +155,9 @@ public class OAuth2AuthFilter implements Filter {
         }
 
         String token = authHeader.substring(AUTH_SCHEME.length());
-        JsonNode tokenInfo = tokenIntrospection.getTokenInfo(token);
+        JsonNode tokenInfo = (JsonNode) tokenIntrospection.getTokenInfo(token);
         String userName = "";
+
         if (tokenInfo.isEmpty()) {
             LOGGER.info("TokenInfo contains no data");
             if ((accept != null) && (accept.contains("text/html"))) {
@@ -255,7 +269,7 @@ public class OAuth2AuthFilter implements Filter {
         } else {
             try {
                 token = authHeader.substring(AUTH_SCHEME.length() + 1);
-                tokenInfo = tokenIntrospection.getTokenInfo(token);
+                tokenInfo = (JsonNode) tokenIntrospection.getTokenInfo(token);
             } catch (StringIndexOutOfBoundsException e) {
                 LOGGER.debug("No token in Authorization header.");
                 if ((accept != null) && (accept.contains("text/html"))) {
@@ -319,7 +333,7 @@ public class OAuth2AuthFilter implements Filter {
             ObjectMapper tiMapper = new ObjectMapper();
             Map<String, Object> ti = tiMapper.convertValue(tokenInfo, new TypeReference<Map<String, Object>>() {});
             pe.addContextItem("TokenInfo", ti);
-            JsonNode userInformation = userInfo.getUserInfo(token);
+            JsonNode userInformation = (JsonNode) userInfo.getUserInfo(token);
 
             ObjectMapper uiMapper = new ObjectMapper();
             Map<String, Object> ui = uiMapper.convertValue(userInformation, new TypeReference<Map<String, Object>>() {});
@@ -351,6 +365,10 @@ public class OAuth2AuthFilter implements Filter {
 
     @Override
     public void destroy() {
+        // Always shut down, even when the instance is the shared one from
+        // OAuth2AuthProvider: this Filter#destroy() callback is the only
+        // reliable cleanup trigger for it (AuthProvider has none), and it
+        // fires as the webapp - Provider included - is being torn down.
         tokenIntrospection.shutdown();
     }
 

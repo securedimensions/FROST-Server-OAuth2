@@ -17,20 +17,21 @@
  */
 package de.securedimensions.frostserver.auth.oauth2;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import de.fraunhofer.iosb.ilt.frostserver.persistence.PersistenceManager;
 import de.fraunhofer.iosb.ilt.frostserver.service.InitResult;
-import de.fraunhofer.iosb.ilt.frostserver.settings.ConfigDefaults;
 import de.fraunhofer.iosb.ilt.frostserver.settings.CoreSettings;
-import de.fraunhofer.iosb.ilt.frostserver.settings.Settings;
-import de.fraunhofer.iosb.ilt.frostserver.settings.annotation.DefaultValue;
-import de.fraunhofer.iosb.ilt.frostserver.settings.annotation.DefaultValueBoolean;
-import de.fraunhofer.iosb.ilt.frostserver.settings.annotation.DefaultValueInt;
 import de.fraunhofer.iosb.ilt.frostserver.util.AuthProvider;
 import de.fraunhofer.iosb.ilt.frostserver.util.LiquibaseUser;
+import de.fraunhofer.iosb.ilt.frostserver.util.UserCaches;
 import de.fraunhofer.iosb.ilt.frostserver.util.exception.UpgradeFailedException;
 import de.fraunhofer.iosb.ilt.frostserver.util.user.PrincipalExtended;
 import de.fraunhofer.iosb.ilt.frostserver.util.user.UserClientInfo;
+import de.fraunhofer.iosb.ilt.settings.ConfigDefaults;
+import de.fraunhofer.iosb.ilt.settings.Settings;
+import de.fraunhofer.iosb.ilt.settings.annotation.DefaultValue;
+import de.fraunhofer.iosb.ilt.settings.annotation.DefaultValueBoolean;
+import de.fraunhofer.iosb.ilt.settings.annotation.DefaultValueInt;
+import jakarta.servlet.ServletContext;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashSet;
@@ -40,11 +41,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.JsonNode;
 
 /**
  * A FROST Auth implementation for OAuth2 Authentication.
  */
-public class OAuth2AuthProvider implements AuthProvider, LiquibaseUser, ConfigDefaults {
+public class OAuth2AuthProvider extends UserCaches implements AuthProvider, LiquibaseUser, ConfigDefaults {
 
     @DefaultValueInt(10)
     public static final String TAG_MAX_CLIENTS_PER_USER = "maxClientsPerUser";
@@ -72,6 +74,19 @@ public class OAuth2AuthProvider implements AuthProvider, LiquibaseUser, ConfigDe
 
     @DefaultValue("USER_NAME")
     public static final String TAG_USERNAME_COLUMN = "usernameColumn";
+
+    /**
+     * ServletContext attribute key under which the shared TokenIntrospection
+     * instance (and its background ExpiredKeyRemover executor) is published,
+     * so OAuth2AuthFilter can reuse it instead of creating its own. Without
+     * this, each of the two would run its own executor, and only the
+     * Filter's gets shut down via the servlet container's reliable
+     * Filter#destroy() callback - AuthProvider has no equivalent lifecycle
+     * hook, so this instance's executor would otherwise keep firing after
+     * the webapp is undeployed and crash trying to load classes through the
+     * now-invalidated webapp classloader.
+     */
+    static final String ATTRIBUTE_TOKEN_INTROSPECTION = "de.securedimensions.frostserver.auth.oauth2.tokenIntrospection";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2AuthProvider.class);
     private final Map<String, UserClientInfo> clientidToUserinfo = new ConcurrentHashMap<>();
@@ -118,18 +133,21 @@ public class OAuth2AuthProvider implements AuthProvider, LiquibaseUser, ConfigDe
 
     @Override
     public void addFilter(Object context, CoreSettings coreSettings) {
+        if (context instanceof ServletContext servletContext) {
+            servletContext.setAttribute(ATTRIBUTE_TOKEN_INTROSPECTION, tokenIntrospection);
+        }
         OAuth2AuthFilterHelper.createFilter(context, coreSettings);
     }
 
     @Override
     public boolean isValidUser(String clientId, String userName, String password) {
         LOGGER.debug("isUserValid()");
-        if (((userName != null) && !userName.isEmpty()) && !userName.equalsIgnoreCase("BEARER")) {
-            LOGGER.info("username must either be empty or be set to 'Bearer'");
+        if ((userName == null) || userName.isEmpty()) {
+            LOGGER.info("username must be set");
             return false;
         }
 
-        JsonNode tokenInfo = tokenIntrospection.getTokenInfo(password);
+        JsonNode tokenInfo = (JsonNode) tokenIntrospection.getTokenInfo(password);
 
         if (tokenInfo.isEmpty()) {
             LOGGER.info("TokenInfo contains no data");
@@ -185,6 +203,22 @@ public class OAuth2AuthProvider implements AuthProvider, LiquibaseUser, ConfigDe
             return PrincipalExtended.ANONYMOUS_PRINCIPAL;
         }
         return userInfo.getUserPrincipal();
+    }
+
+    @Override
+    public UserCaches getUserCaches() {
+        return this;// Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public void destroy() {
+        // Instances created for the embedded MQTT broker (via AuthWrapper)
+        // never get addFilter() called, so OAuth2AuthFilter#destroy() is
+        // never invoked for them and this is the only cleanup they get.
+        // For the servlet-filter instance, the Filter's own destroy() may
+        // have already shut down the same shared TokenIntrospection;
+        // shutdown() is safe to call more than once.
+        tokenIntrospection.shutdown();
     }
 
 }

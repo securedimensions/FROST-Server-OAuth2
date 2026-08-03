@@ -21,10 +21,10 @@ package de.securedimensions.frostserver.auth.oauth2;
 From https://stackoverflow.com/questions/49560258/is-there-an-expiring-map-in-java-that-expires-elements-after-a-period-of-time-si
  */
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.JsonNode;
 
 public class ExpiredKeyRemover implements Runnable {
 
