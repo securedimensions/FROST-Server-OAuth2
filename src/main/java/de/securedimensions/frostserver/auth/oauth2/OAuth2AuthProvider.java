@@ -79,12 +79,10 @@ public class OAuth2AuthProvider extends UserCaches implements AuthProvider, Liqu
      * ServletContext attribute key under which the shared TokenIntrospection
      * instance (and its background ExpiredKeyRemover executor) is published,
      * so OAuth2AuthFilter can reuse it instead of creating its own. Without
-     * this, each of the two would run its own executor, and only the
-     * Filter's gets shut down via the servlet container's reliable
-     * Filter#destroy() callback - AuthProvider has no equivalent lifecycle
-     * hook, so this instance's executor would otherwise keep firing after
-     * the webapp is undeployed and crash trying to load classes through the
-     * now-invalidated webapp classloader.
+     * this, each of the two would run its own executor. Cleanup happens via
+     * {@link #destroy()} (MQTT / AuthProvider lifecycle) and
+     * {@code OAuth2AuthFilter#destroy()} (servlet filter lifecycle); both call
+     * {@code TokenIntrospection#shutdown()}, which is idempotent.
      */
     static final String ATTRIBUTE_TOKEN_INTROSPECTION = "de.securedimensions.frostserver.auth.oauth2.tokenIntrospection";
 
@@ -207,17 +205,25 @@ public class OAuth2AuthProvider extends UserCaches implements AuthProvider, Liqu
 
     @Override
     public UserCaches getUserCaches() {
-        return this;// Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return this;
     }
 
-    @Override
+    /**
+     * Release the shared TokenIntrospection executor. Intended to override
+     * {@code AuthProvider#destroy()} when that lifecycle hook is present in
+     * FROST-Server (added in local 2.8.1 patches / upcoming Core). Not marked
+     * {@code @Override} so this module still compiles against stock Core
+     * without that method; once Core exposes it, this method is picked up
+     * automatically.
+     * <p>
+     * Instances created for the embedded MQTT broker (via AuthWrapper) never
+     * get addFilter() called, so OAuth2AuthFilter#destroy() is never invoked
+     * for them and this is the only cleanup they get. For the servlet-filter
+     * instance, the Filter's own destroy() may have already shut down the
+     * same shared TokenIntrospection; shutdown() is safe to call more than
+     * once.
+     */
     public void destroy() {
-        // Instances created for the embedded MQTT broker (via AuthWrapper)
-        // never get addFilter() called, so OAuth2AuthFilter#destroy() is
-        // never invoked for them and this is the only cleanup they get.
-        // For the servlet-filter instance, the Filter's own destroy() may
-        // have already shut down the same shared TokenIntrospection;
-        // shutdown() is safe to call more than once.
         tokenIntrospection.shutdown();
     }
 
