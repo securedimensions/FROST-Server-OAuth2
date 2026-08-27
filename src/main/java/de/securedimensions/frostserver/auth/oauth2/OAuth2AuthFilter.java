@@ -192,7 +192,7 @@ public class OAuth2AuthFilter implements Filter {
             userName = tokenInfo.get("sub").asText();
         }
 
-        Set<String> roles = new HashSet<>(List.of(tokenInfo.get("scope").asText("").split(" ")));
+        Set<String> roles = OAuth2Roles.fromTokenInfo(tokenInfo);
         return new UserData(userName, token, roles);
 
     }
@@ -316,8 +316,7 @@ public class OAuth2AuthFilter implements Filter {
                 return;
             } else {
                 userName = tokenInfo.get("sub").asText();
-                //Set<String> roles = new HashSet<>(List.of(tokenInfo.get("scope").asText("").split(" ")));
-                Set<String> roles = new HashSet<>();
+                Set<String> roles = OAuth2Roles.fromTokenInfo(tokenInfo);
                 if (userName.equalsIgnoreCase(adminUid)) {
                     roles.add(PrincipalExtended.ROLE_ADMIN);
                     isAdmin = true;

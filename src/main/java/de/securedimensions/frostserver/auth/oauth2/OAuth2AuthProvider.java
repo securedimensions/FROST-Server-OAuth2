@@ -34,8 +34,6 @@ import de.fraunhofer.iosb.ilt.settings.annotation.DefaultValueInt;
 import jakarta.servlet.ServletContext;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -165,7 +163,7 @@ public class OAuth2AuthProvider extends UserCaches implements AuthProvider, Liqu
         }
 
         boolean admin = userName.equalsIgnoreCase(adminUid);
-        Set<String> roles = new HashSet<>(List.of(tokenInfo.get("scope").asText("").split(" ")));
+        Set<String> roles = OAuth2Roles.fromTokenInfo(tokenInfo);
         if (admin) {
             roles.add(PrincipalExtended.ROLE_ADMIN);
         }
